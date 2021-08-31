@@ -3,31 +3,53 @@ import csv
 import glob
 import os.path
 from openpyxl import Workbook
+import names
 
 from scrapy.spiders import Spider
 from scrapy.http import Request
+
+PAGE = 0
+SIZE = 10
+BASE_URL = "https://maroof.sa/"
 
 
 class EmailsSpider(Spider):
     name = 'emails'
     allowed_domains = ['maroof.sa']
     start_urls = [
-        'https://maroof.sa/BusinessType/MoreBusinessList?businessTypeId=14&pageNumber=0&sortProperty=BestRating&desc=True'
+        BASE_URL
     ]
 
     def parse(self, response):
-        data = response.json()
-        businesses = data["Businesses"]
+        yield Request(
+            f'{BASE_URL}/BusinessType/MoreBusinessList?businessTypeId=23&pageNumber={PAGE}&sortProperty=BestRating&desc=True',
+            callback=self.parse_items)
 
-        for business in businesses:
-            yield Request(f"https://maroof.sa/" + str(business["Id"]), self.parse_item)
+    def parse_items(self, response):
+        if response.text != "":
+            data = response.json()
+            businesses = data["Businesses"]
+
+            for business in businesses:
+                yield Request(f"{BASE_URL}" + str(business["Id"]), self.parse_item)
+
+            page_number = data["PageNumber"]
+            size = data["Size"]
+            count = data["Count"]
+
+            if (page_number * size) < count:
+                yield Request(response.urljoin(
+                    f'?businessTypeId=23&pageNumber={page_number}&sortProperty=BestRating&desc=True'),
+                    self.parse_items)
 
     def parse_item(self, response):
         email = response.xpath(
             '//p[contains(text(),"البريد الإلكتروني ")]/following-sibling::p//text()').extract_first()
 
         yield {
-            'email': email.strip(),
+            'First name': names.get_first_name(),
+            'Last name': names.get_last_name(),
+            'Email': email,
         }
 
     def close(spider, reason):

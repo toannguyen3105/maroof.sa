@@ -1,5 +1,5 @@
 # SCRAPE maroof.sa
-Get the emails of the vendor
+Collect chefs emails
 
 ## Features
 
