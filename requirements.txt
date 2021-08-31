@@ -1,0 +1,4 @@
+Scrapy
+ipython
+openpyxl
+scrapy_proxies
